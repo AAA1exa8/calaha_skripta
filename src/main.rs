@@ -3,8 +3,8 @@ use std::collections::HashMap;
 fn main() {
     let mut kalah = Kalah::new();
     let games = kalah.get_children();
-    // let mut cache = HashMap::new(); 
-    let (score, best_move) = minimax(&kalah, 10, true, /*&mut cache*/);
+    let mut cache = HashMap::new(); 
+    let (score, best_move) = minimax(&kalah, 10, true, &mut cache);
     println!("score: {}, best_move: {:#?}", score, games[best_move]);
 }
 
@@ -108,14 +108,14 @@ impl Kalah {
     }
 }
 
-fn minimax(node: &Kalah, depth: u64, maximizing_player: bool/*, cache: &mut HashMap<Kalah, (i32, usize)>*/) -> (i32, usize) {
-    // if let Some(&(score, move_)) = cache.get(node) {
-    //     return (score, move_);
-    // }
+fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut HashMap<Kalah, (i32, usize)>) -> (i32, usize) {
+    if let Some(&(score, move_)) = cache.get(node) {
+        return (score, move_);
+    }
 
     if depth == 0 || node.game_over() {
         let result = (node.heuristic(), 0);
-        // cache.insert(node.clone(), result);
+        cache.insert(node.clone(), result);
         return result;
     }
 
@@ -123,27 +123,27 @@ fn minimax(node: &Kalah, depth: u64, maximizing_player: bool/*, cache: &mut Hash
         let mut max_eval = i32::MIN;
         let mut best_move = 0;
         for (i, child) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, false, /*cache*/);
+            let (eval, _) = minimax(child, depth - 1, false, cache);
             if eval > max_eval {
                 max_eval = eval;
                 best_move = i;
             }
         }
         let result = (max_eval, best_move);
-        // cache.insert(node.clone(), result);
+        cache.insert(node.clone(), result);
         return result;
     } else {
         let mut min_eval = i32::MAX;
         let mut best_move = 0;
         for (i, child) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, true, /*cache*/);
+            let (eval, _) = minimax(child, depth - 1, true, cache);
             if eval < min_eval {
                 min_eval = eval;
                 best_move = i;
             }
         }
         let result = (min_eval, best_move);
-        // cache.insert(node.clone(), result);
+        cache.insert(node.clone(), result);
         return result;
     }
 }

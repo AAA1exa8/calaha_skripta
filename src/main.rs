@@ -9,7 +9,7 @@ fn main() {
     let games = kalah.get_children();
     let mut cache = LruCache::new(NonZeroUsize::new(500_000_000).unwrap());
     let (score, best_move) = minimax(&kalah, 10, i32::MIN, i32::MAX, true, &mut cache);
-    println!("Best score: {}, Best move: {}", score, best_move);
+    println!("Best score: {}, Best move: {:?}", score, games[best_move]);
     kalah = games[best_move].0.clone();
     loop {
         // print!("Enter index: ");
@@ -193,7 +193,7 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
         let mut max_eval = i32::MIN;
         let mut best_move = 0;
         let mut alpha = alpha;
-        for (i, (child, moves)) in node.get_children().iter().enumerate() {
+        for (i, (child, _)) in node.get_children().iter().enumerate() {
             let (eval, _) = minimax(child, depth - 1, alpha, beta, false, cache);
             if eval > max_eval {
                 max_eval = eval;
@@ -211,7 +211,7 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
         let mut min_eval = i32::MAX;
         let mut best_move = 0;
         let mut beta = beta;
-        for (i, (child, moves)) in node.get_children().iter().enumerate() {
+        for (i, (child, _)) in node.get_children().iter().enumerate() {
             let (eval, _) = minimax(child, depth - 1, alpha, beta, true, cache);
             if eval < min_eval {
                 min_eval = eval;

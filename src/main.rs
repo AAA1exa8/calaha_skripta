@@ -8,7 +8,7 @@ fn main() {
     let mut kalah = Kalah::new();
     let games = kalah.get_children();
     let mut cache = LruCache::new(NonZeroUsize::new(500_000_000).unwrap());
-    let (score, best_move) = minimax(&kalah, 10, i32::MIN, i32::MAX, true, &mut cache);
+    let (score, best_move) = minimax(&kalah, 13, i32::MIN, i32::MAX, true, &mut cache);
     println!("Best score: {}, Best move: {:?}", score, games[best_move]);
     kalah = games[best_move].0.clone();
     loop {
@@ -74,20 +74,10 @@ impl Kalah {
     }
 
     fn heuristic(&self) -> i32 {
-        match self.players_turn {
-            Turn::Player1 => {
-                let (player_1, player_2) = self.game.split_at(7);
-                let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
-                let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
-                (player_1_score as i32) - (player_2_score as i32)
-            },
-            Turn::Player2 => {
-                let (player_1, player_2) = self.game.split_at(7);
-                let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
-                let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
-                (player_2_score as i32) - (player_1_score as i32)
-            }
-        }
+        let (player_1, player_2) = self.game.split_at(7);
+        let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
+        let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
+        (player_1_score as i32) - (player_2_score as i32)
     }
 
     fn get_children(&self) -> Vec<(Kalah, Vec<usize>)> {

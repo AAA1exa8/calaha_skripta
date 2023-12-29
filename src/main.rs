@@ -6,11 +6,12 @@ use colored::*;
 
 fn main() {
     let mut kalah = Kalah::new();
-    let games = kalah.get_children();
+    // let games = kalah.get_children();
     let mut cache = LruCache::new(NonZeroUsize::new(500_000_000).unwrap());
-    let (score, best_move) = minimax(&kalah, 14, i32::MIN, i32::MAX, true, &mut cache);
-    println!("Best score: {}, Best move: {:?}", score, games[best_move]);
-    kalah = games[best_move].0.clone();
+    // let (score, best_move) = minimax(&kalah, 14, i32::MIN, i32::MAX, true, &mut cache);
+    // println!("Best score: {}, Best move: {:?}", score, games[best_move]);
+    // kalah = games[best_move].0.clone();
+    println!("{:#?}", kalah);
     loop {
         // print!("Enter index: ");
         let mut input = String::new();

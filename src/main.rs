@@ -74,6 +74,12 @@ impl Kalah {
     }
 
     fn heuristic(&self) -> i32 {
+        if self.game_over() {
+            let (player_1, player_2) = self.game.split_at(7);
+            let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>()*2;
+            let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>()*2;
+            return (player_1_score as i32) - (player_2_score as i32)
+        }
         let (player_1, player_2) = self.game.split_at(7);
         let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
         let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();

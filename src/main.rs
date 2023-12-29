@@ -10,7 +10,7 @@ fn main() {
     let mut cache = LruCache::new(NonZeroUsize::new(500_000_000).unwrap());
     let (score, best_move) = minimax(&kalah, 10, i32::MIN, i32::MAX, true, &mut cache);
     println!("Best score: {}, Best move: {}", score, best_move);
-    kalah = games[best_move].clone();
+    kalah = games[best_move].0.clone();
     loop {
         // print!("Enter index: ");
         let mut input = String::new();
@@ -23,7 +23,7 @@ fn main() {
             let games = kalah.get_children();
             let (score, best_move) = minimax(&kalah, 10, i32::MIN, i32::MAX, true, &mut cache);
             println!("score: {}, best_move:\n {:#?}", score, games[best_move]);
-            kalah = games[best_move].clone();
+            kalah = games[best_move].0.clone();
         }                    
     }
 }
@@ -90,8 +90,8 @@ impl Kalah {
         }
     }
 
-    fn get_children(&self) -> Vec<Kalah> {
-        let mut childeren = Vec::new();
+    fn get_children(&self) -> Vec<(Kalah, Vec<usize>)> {
+        let mut children = Vec::new();
         match self.players_turn {
             Turn::Player1 => {
                 for i in 0..6 {
@@ -99,9 +99,13 @@ impl Kalah {
                         let mut child = self.clone();
                         let last_index = child.move_stones(i);
                         if (last_index + 1) % 7 == 0 {
-                            childeren.append(&mut child.get_children());
-                        }else{
-                            childeren.push(child);
+                            let grand_children = child.get_children();
+                            for (grand_child, mut moves) in grand_children {
+                                moves.insert(0, i);
+                                children.push((grand_child, moves));
+                            }
+                        } else {
+                            children.push((child, vec![i]));
                         }
                     }
                 }
@@ -112,15 +116,19 @@ impl Kalah {
                         let mut child = self.clone();
                         let last_index = child.move_stones(i);
                         if (last_index + 1) % 7 == 0 {
-                            childeren.append(&mut child.get_children());
-                        }else{
-                            childeren.push(child);
+                            let grand_children = child.get_children();
+                            for (grand_child, mut moves) in grand_children {
+                                moves.insert(0, i);
+                                children.push((grand_child, moves));
+                            }
+                        } else {
+                            children.push((child, vec![i]));
                         }
                     }
                 }
             }
-        };
-        childeren
+        }
+        children
     }
 
 
@@ -185,7 +193,7 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
         let mut max_eval = i32::MIN;
         let mut best_move = 0;
         let mut alpha = alpha;
-        for (i, child) in node.get_children().iter().enumerate() {
+        for (i, (child, moves)) in node.get_children().iter().enumerate() {
             let (eval, _) = minimax(child, depth - 1, alpha, beta, false, cache);
             if eval > max_eval {
                 max_eval = eval;
@@ -203,7 +211,7 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
         let mut min_eval = i32::MAX;
         let mut best_move = 0;
         let mut beta = beta;
-        for (i, child) in node.get_children().iter().enumerate() {
+        for (i, (child, moves)) in node.get_children().iter().enumerate() {
             let (eval, _) = minimax(child, depth - 1, alpha, beta, true, cache);
             if eval < min_eval {
                 min_eval = eval;

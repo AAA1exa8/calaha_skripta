@@ -22,7 +22,7 @@ fn main() {
             println!("computing");
             let games = kalah.get_children();
             let (score, best_move) = minimax(&kalah, 10, i32::MIN, i32::MAX, true, &mut cache);
-            println!("score: {}, best_move:\n {:#?}", score, games[best_move]);
+            println!("score: {}, best_move:\n {:?}", score, games[best_move]);
             kalah = games[best_move].0.clone();
         }                    
     }

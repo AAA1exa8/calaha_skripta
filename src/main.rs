@@ -69,7 +69,7 @@ impl std::fmt::Debug for Kalah {
 impl Kalah {
     fn new() -> Kalah {
         Kalah {
-            players_turn: Turn::Player1,
+            players_turn: Turn::Player2,
             game: [6,6,6,6,6,6,0,6,6,6,6,6,6,0]
         }
     }

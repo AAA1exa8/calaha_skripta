@@ -146,7 +146,10 @@ impl Kalah {
         } {
             let opposite_index = 12 - current_index;
             self.game[current_index] = 0;
-            self.game[6] += self.game[opposite_index] + 1;
+            self.game[match self.players_turn {
+                Turn::Player1 => 6,
+                Turn::Player2 => 13,
+            }] += self.game[opposite_index] + 1;
             self.game[opposite_index] = 0;
         }
         if (current_index + 1) % 7 != 0 {

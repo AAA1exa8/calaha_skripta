@@ -21,7 +21,7 @@ fn main() {
         if (last_index + 1) % 7 != 0 {
             println!("computing");
             let games = kalah.get_children();
-            let (score, best_move) = minimax(&kalah, 10, true, &mut cache);
+            let (score, best_move) = minimax(&kalah, 10, i32::MIN, i32::MAX, true, &mut cache);
             println!("score: {}, best_move:\n {:#?}", score, games[best_move]);
             kalah = games[best_move].clone();
         }                    

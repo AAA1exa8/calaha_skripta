@@ -1,14 +1,15 @@
 use lru::LruCache;
 use std::num::NonZeroUsize;
 use std::fmt::Debug;
+use std::cmp::{max, min};
 use colored::*;
 
 fn main() {
     let mut kalah = Kalah::new();
     let games = kalah.get_children();
     let mut cache = LruCache::new(NonZeroUsize::new(500_000_000).unwrap());
-    let (score, best_move) = minimax(&kalah, 10, true, &mut cache);
-    println!("score: {}, best_move: {:#?}", score, games[best_move]);
+    let (score, best_move) = minimax(&kalah, 10, i32::MIN, i32::MAX, true, &mut cache);
+    println!("Best score: {}, Best move: {}", score, best_move);
     kalah = games[best_move].clone();
     loop {
         // print!("Enter index: ");
@@ -169,7 +170,7 @@ impl Kalah {
     }
 }
 
-fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut LruCache<Kalah, (i32, usize)>) -> (i32, usize) {
+fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: bool, cache: &mut LruCache<Kalah, (i32, usize)>) -> (i32, usize) {
     if let Some(&(score, move_)) = cache.get(node) {
         return (score, move_);
     }
@@ -183,11 +184,16 @@ fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut LruCac
     if maximizing_player {
         let mut max_eval = i32::MIN;
         let mut best_move = 0;
+        let mut alpha = alpha;
         for (i, child) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, false, cache);
+            let (eval, _) = minimax(child, depth - 1, alpha, beta, false, cache);
             if eval > max_eval {
                 max_eval = eval;
                 best_move = i;
+            }
+            alpha = max(alpha, eval);
+            if beta <= alpha {
+                break;
             }
         }
         let result = (max_eval, best_move);
@@ -196,11 +202,16 @@ fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut LruCac
     } else {
         let mut min_eval = i32::MAX;
         let mut best_move = 0;
+        let mut beta = beta;
         for (i, child) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, true, cache);
+            let (eval, _) = minimax(child, depth - 1, alpha, beta, true, cache);
             if eval < min_eval {
                 min_eval = eval;
                 best_move = i;
+            }
+            beta = min(beta, eval);
+            if beta <= alpha {
+                break;
             }
         }
         let result = (min_eval, best_move);

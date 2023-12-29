@@ -1,11 +1,12 @@
-use std::collections::HashMap;
+use lru::LruCache;
+use std::num::NonZeroUsize;
 use std::fmt::Debug;
 use colored::*;
 
 fn main() {
     let mut kalah = Kalah::new();
     let games = kalah.get_children();
-    let mut cache = HashMap::new(); 
+    let mut cache = LruCache::new(NonZeroUsize::new(500_000_000).unwrap());
     let (score, best_move) = minimax(&kalah, 10, true, &mut cache);
     println!("score: {}, best_move: {:#?}", score, games[best_move]);
     kalah = games[best_move].clone();
@@ -168,14 +169,14 @@ impl Kalah {
     }
 }
 
-fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut HashMap<Kalah, (i32, usize)>) -> (i32, usize) {
+fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut LruCache<Kalah, (i32, usize)>) -> (i32, usize) {
     if let Some(&(score, move_)) = cache.get(node) {
         return (score, move_);
     }
 
     if depth == 0 || node.game_over() {
         let result = (node.heuristic(), 0);
-        cache.insert(node.clone(), result);
+        cache.put(node.clone(), result);
         return result;
     }
 
@@ -190,7 +191,7 @@ fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut HashMa
             }
         }
         let result = (max_eval, best_move);
-        cache.insert(node.clone(), result);
+        cache.put(node.clone(), result);
         return result;
     } else {
         let mut min_eval = i32::MAX;
@@ -203,7 +204,7 @@ fn minimax(node: &Kalah, depth: u64, maximizing_player: bool, cache: &mut HashMa
             }
         }
         let result = (min_eval, best_move);
-        cache.insert(node.clone(), result);
+        cache.put(node.clone(), result);
         return result;
     }
 }

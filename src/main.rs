@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::fmt::Debug;
+use colored::*;
 
 fn main() {
     let mut kalah = Kalah::new();
@@ -6,11 +7,27 @@ fn main() {
     let mut cache = HashMap::new(); 
     let (score, best_move) = minimax(&kalah, 10, true, &mut cache);
     println!("score: {}, best_move: {:#?}", score, games[best_move]);
+    kalah = games[best_move].clone();
+    loop {
+        // print!("Enter index: ");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        let index = input.trim().parse::<usize>().unwrap();
+        let last_index = kalah.move_stones(index);
+        println!("{:#?}", kalah);
+        if (last_index + 1) % 7 != 0 {
+            println!("computing");
+            let games = kalah.get_children();
+            let (score, best_move) = minimax(&kalah, 10, true, /*&mut cache*/);
+            println!("score: {}, best_move:\n {:#?}", score, games[best_move]);
+            kalah = games[best_move].clone();
+        }                    
+    }
 }
 
 
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 struct Kalah {
     players_turn: Turn,
     game: [u8; 14],
@@ -22,6 +39,29 @@ enum Turn {
     Player2,
 }
 
+impl std::fmt::Debug for Kalah {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "players_turn: {:?}\n", self.players_turn)?;
+        write!(f, "game:\n")?;
+        for i in (7..14).rev() {
+            write!(f, "{:0x} ", i)?;
+        }
+        write!(f, "\n")?;
+        for i in (7..14).rev() {
+            write!(f, "{} ", format!("{}",self.game[i]).red())?;
+        }
+        write!(f, "\n  ")?;
+        for i in 0..7 {
+            write!(f, "{} ", format!("{}",self.game[i]).green())?;
+        }
+        write!(f, "\n  ")?;
+        for i in 0..7 {
+            write!(f, "{} ", i)?;
+        }
+        write!(f, "\n")
+    }
+}
+
 impl Kalah {
     fn new() -> Kalah {
         Kalah {
@@ -31,10 +71,20 @@ impl Kalah {
     }
 
     fn heuristic(&self) -> i32 {
-        let (player_1, player_2) = self.game.split_at(7);
-        let player_1_score = player_1[6] + player_1.iter().sum::<u8>();
-        let player_2_score = player_2[6] + player_2.iter().sum::<u8>();
-        (player_1_score as i32) - (player_2_score as i32)
+        match self.players_turn {
+            Turn::Player1 => {
+                let (player_1, player_2) = self.game.split_at(7);
+                let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
+                let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
+                (player_1_score as i32) - (player_2_score as i32)
+            },
+            Turn::Player2 => {
+                let (player_1, player_2) = self.game.split_at(7);
+                let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
+                let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
+                (player_2_score as i32) - (player_1_score as i32)
+            }
+        }
     }
 
     fn get_children(&self) -> Vec<Kalah> {
@@ -67,7 +117,6 @@ impl Kalah {
                 }
             }
         };
-        childeren.reverse();
         childeren
     }
 
@@ -87,17 +136,27 @@ impl Kalah {
             self.game[current_index] += 1;
             stones -= 1;
         }
+        if self.game[current_index] == 1 && match self.players_turn {
+            Turn::Player1 => {
+                current_index < 6
+            },
+            Turn::Player2 => {
+                current_index > 6 && current_index < 13
+            }
+        } {
+            let opposite_index = 12 - current_index;
+            self.game[current_index] = 0;
+            self.game[match self.players_turn {
+                Turn::Player1 => 6,
+                Turn::Player2 => 13,
+            }] += self.game[opposite_index] + 1;
+            self.game[opposite_index] = 0;
+        }
         if (current_index + 1) % 7 != 0 {
             self.players_turn = match self.players_turn {
                 Turn::Player1 => Turn::Player2,
                 Turn::Player2 => Turn::Player1,
             }
-        }
-        if self.game[current_index] == 1 && current_index != 6 && current_index != 13 {
-            let opposite_index = 12 - current_index;
-            self.game[current_index] = 0;
-            self.game[6] += self.game[opposite_index] + 1;
-            self.game[opposite_index] = 0;
         }
         current_index
     }

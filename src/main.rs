@@ -1,15 +1,11 @@
 use std::fmt::Debug;
+use std::cmp::{max, min};
 use colored::*;
 
 fn main() {
     let mut kalah = Kalah::new();
-    let games = kalah.get_children();
-    // let mut cache = HashMap::new(); 
-    let (score, best_move) = minimax(&kalah, 10, true, /*&mut cache*/);
-    println!("score: {}, best_move: {:#?}", score, games[best_move]);
-    kalah = games[best_move].clone();
+    println!("{:#?}", kalah);
     loop {
-        // print!("Enter index: ");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
         let index = input.trim().parse::<usize>().unwrap();
@@ -18,9 +14,9 @@ fn main() {
         if (last_index + 1) % 7 != 0 {
             println!("computing");
             let games = kalah.get_children();
-            let (score, best_move) = minimax(&kalah, 10, true, /*&mut cache*/);
-            println!("score: {}, best_move:\n {:#?}", score, games[best_move]);
-            kalah = games[best_move].clone();
+            let (score, best_move) = minimax(&kalah, 9, true);
+            println!("score: {}, best_move:\n {:?}", score, games[best_move]);
+            kalah = games[best_move].0.clone();
         }                    
     }
 }
@@ -65,30 +61,26 @@ impl std::fmt::Debug for Kalah {
 impl Kalah {
     fn new() -> Kalah {
         Kalah {
-            players_turn: Turn::Player1,
+            players_turn: Turn::Player2,
             game: [6,6,6,6,6,6,0,6,6,6,6,6,6,0]
         }
     }
 
     fn heuristic(&self) -> i32 {
-        match self.players_turn {
-            Turn::Player1 => {
-                let (player_1, player_2) = self.game.split_at(7);
-                let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
-                let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
-                (player_1_score as i32) - (player_2_score as i32)
-            },
-            Turn::Player2 => {
-                let (player_1, player_2) = self.game.split_at(7);
-                let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
-                let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
-                (player_2_score as i32) - (player_1_score as i32)
-            }
+        if self.game_over() {
+            let (player_1, player_2) = self.game.split_at(7);
+            let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>()*2;
+            let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>()*2;
+            return (player_1_score as i32) - (player_2_score as i32)
         }
+        let (player_1, player_2) = self.game.split_at(7);
+        let player_1_score = player_1[6]*2 + player_1.iter().sum::<u8>();
+        let player_2_score = player_2[6]*2 + player_2.iter().sum::<u8>();
+        (player_1_score as i32) - (player_2_score as i32)
     }
 
-    fn get_children(&self) -> Vec<Kalah> {
-        let mut childeren = Vec::new();
+    fn get_children(&self) -> Vec<(Kalah, Vec<usize>)> {
+        let mut children = Vec::new();
         match self.players_turn {
             Turn::Player1 => {
                 for i in 0..6 {
@@ -96,9 +88,13 @@ impl Kalah {
                         let mut child = self.clone();
                         let last_index = child.move_stones(i);
                         if (last_index + 1) % 7 == 0 {
-                            childeren.append(&mut child.get_children());
-                        }else{
-                            childeren.push(child);
+                            let grand_children = child.get_children();
+                            for (grand_child, mut moves) in grand_children {
+                                moves.insert(0, i);
+                                children.push((grand_child, moves));
+                            }
+                        } else {
+                            children.push((child, vec![i]));
                         }
                     }
                 }
@@ -109,15 +105,19 @@ impl Kalah {
                         let mut child = self.clone();
                         let last_index = child.move_stones(i);
                         if (last_index + 1) % 7 == 0 {
-                            childeren.append(&mut child.get_children());
-                        }else{
-                            childeren.push(child);
+                            let grand_children = child.get_children();
+                            for (grand_child, mut moves) in grand_children {
+                                moves.insert(0, i);
+                                children.push((grand_child, moves));
+                            }
+                        } else {
+                            children.push((child, vec![i]));
                         }
                     }
                 }
             }
-        };
-        childeren
+        }
+        children
     }
 
 
@@ -167,42 +167,33 @@ impl Kalah {
     }
 }
 
-fn minimax(node: &Kalah, depth: u64, maximizing_player: bool/*, cache: &mut HashMap<Kalah, (i32, usize)>*/) -> (i32, usize) {
-    // if let Some(&(score, move_)) = cache.get(node) {
-    //     return (score, move_);
-    // }
-
+fn minimax(node: &Kalah, depth: u64, maximizing_player: bool) -> (i32, usize) {
     if depth == 0 || node.game_over() {
         let result = (node.heuristic(), 0);
-        // cache.insert(node.clone(), result);
         return result;
     }
 
     if maximizing_player {
         let mut max_eval = i32::MIN;
         let mut best_move = 0;
-        for (i, child) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, false, /*cache*/);
+        for (i, (child, _)) in node.get_children().iter().enumerate() {
+            let (eval, _) = minimax(child, depth - 1, false);
             if eval > max_eval {
                 max_eval = eval;
                 best_move = i;
             }
         }
-        let result = (max_eval, best_move);
-        // cache.insert(node.clone(), result);
-        return result;
+        (max_eval, best_move)
     } else {
         let mut min_eval = i32::MAX;
         let mut best_move = 0;
-        for (i, child) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, true, /*cache*/);
+        for (i, (child, _)) in node.get_children().iter().enumerate() {
+            let (eval, _) = minimax(child, depth - 1, true);
             if eval < min_eval {
                 min_eval = eval;
                 best_move = i;
             }
         }
-        let result = (min_eval, best_move);
-        // cache.insert(node.clone(), result);
-        return result;
+        (min_eval, best_move)
     }
 }

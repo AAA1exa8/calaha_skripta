@@ -1,19 +1,11 @@
-use lru::LruCache;
-use std::num::NonZeroUsize;
 use std::fmt::Debug;
 use std::cmp::{max, min};
 use colored::*;
 
 fn main() {
     let mut kalah = Kalah::new();
-    // let games = kalah.get_children();
-    let mut cache = LruCache::new(NonZeroUsize::new(500_000_000).unwrap());
-    // let (score, best_move) = minimax(&kalah, 14, i32::MIN, i32::MAX, true, &mut cache);
-    // println!("Best score: {}, Best move: {:?}", score, games[best_move]);
-    // kalah = games[best_move].0.clone();
     println!("{:#?}", kalah);
     loop {
-        // print!("Enter index: ");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
         let index = input.trim().parse::<usize>().unwrap();
@@ -22,7 +14,7 @@ fn main() {
         if (last_index + 1) % 7 != 0 {
             println!("computing");
             let games = kalah.get_children();
-            let (score, best_move) = minimax(&kalah, 13, i32::MIN, i32::MAX, true, &mut cache);
+            let (score, best_move) = minimax(&kalah, 13, i32::MIN, i32::MAX, true);
             println!("score: {}, best_move:\n {:?}", score, games[best_move]);
             kalah = games[best_move].0.clone();
         }                    
@@ -175,23 +167,17 @@ impl Kalah {
     }
 }
 
-fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: bool, cache: &mut LruCache<Kalah, (i32, usize)>) -> (i32, usize) {
-    if let Some(&(score, move_)) = cache.get(node) {
-        return (score, move_);
-    }
-
+fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: bool) -> (i32, usize) {
     if depth == 0 || node.game_over() {
         let result = (node.heuristic(), 0);
-        cache.put(node.clone(), result);
         return result;
     }
-
     if maximizing_player {
         let mut max_eval = i32::MIN;
         let mut best_move = 0;
         let mut alpha = alpha;
         for (i, (child, _)) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, alpha, beta, false, cache);
+            let (eval, _) = minimax(child, depth - 1, alpha, beta, false);
             if eval > max_eval {
                 max_eval = eval;
                 best_move = i;
@@ -201,15 +187,13 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
                 break;
             }
         }
-        let result = (max_eval, best_move);
-        cache.put(node.clone(), result);
-        return result;
+        (max_eval, best_move)
     } else {
         let mut min_eval = i32::MAX;
         let mut best_move = 0;
         let mut beta = beta;
         for (i, (child, _)) in node.get_children().iter().enumerate() {
-            let (eval, _) = minimax(child, depth - 1, alpha, beta, true, cache);
+            let (eval, _) = minimax(child, depth - 1, alpha, beta, true);
             if eval < min_eval {
                 min_eval = eval;
                 best_move = i;
@@ -219,8 +203,6 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
                 break;
             }
         }
-        let result = (min_eval, best_move);
-        cache.put(node.clone(), result);
-        return result;
+        (min_eval, best_move)
     }
 }

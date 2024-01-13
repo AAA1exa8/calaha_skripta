@@ -179,13 +179,11 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
     if let Some(&(score, move_)) = cache.get(node) {
         return (score, move_);
     }
-
     if depth == 0 || node.game_over() {
         let result = (node.heuristic(), 0);
         cache.put(node.clone(), result);
         return result;
     }
-
     if maximizing_player {
         let mut max_eval = i32::MIN;
         let mut best_move = 0;
@@ -203,7 +201,7 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
         }
         let result = (max_eval, best_move);
         cache.put(node.clone(), result);
-        return result;
+        result
     } else {
         let mut min_eval = i32::MAX;
         let mut best_move = 0;
@@ -221,6 +219,6 @@ fn minimax(node: &Kalah, depth: u64, alpha: i32, beta: i32, maximizing_player: b
         }
         let result = (min_eval, best_move);
         cache.put(node.clone(), result);
-        return result;
+        result
     }
 }
